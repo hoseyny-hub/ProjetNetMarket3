@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NetMarket - Portail d'Entreprise</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* --- CONFIGURATION GLOBALE --- */
+        :root {
+            --primary: #ff6900; /* NetMarket Orange */
+            --primary-dark: #e05e00;
+            --dark: #1a1a1a;
+            --light-bg: #f4f6f8;
+            --white: #ffffff;
+            --grey: #666;
+            --border: #e1e4e8;
+            --shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
+        body { background-color: var(--light-bg); color: var(--dark); line-height: 1.6; min-height: 100vh; display: flex; flex-direction: column; }
+
+        /* --- HEADER & NAVIGATION --- */
+        header {
+            background-color: var(--dark);
+            color: var(--white);
+            padding: 0 5%;
+            height: 70px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        .logo { font-size: 1.5rem; font-weight: bold; letter-spacing: 1px; }
+        .logo span { color: var(--primary); }
+
+        nav ul { display: flex; list-style: none; gap: 30px; height: 100%; align-items: center; }
+        nav a {
+            color: #ccc;
+            text-decoration: none;
+            font-weight: 500;
+            transition: 0.3s;
+            cursor: pointer;
+            height: 70px;
+            display: flex;
+            align-items: center;
+            padding: 0 5px;
+            border-bottom: 3px solid transparent;
+        }
+        nav a:hover, nav a.active { color: var(--white); border-bottom-color: var(--primary); }
+        
+        .login-btn-nav {
+            background-color: var(--primary);
+            color: white !important;
+            height: 40px;
+            padding: 0 20px;
+            border-radius: 5px;
+            border: none;
+        }
+        .login-btn-nav:hover { background-color: var(--primary-dark); border-bottom-color: transparent; }
+
+        /* --- CONTENU PRINCIPAL (SPA Logic) --- */
+        main { flex: 1; padding: 2rem 5%; max-width: 1400px; margin: 0 auto; width: 100%; }
+        
+        .page-section { display: none; animation: fadeIn 0.4s ease-in-out; }
+        .page-section.active { display: block; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        h1.page-title { margin-bottom: 2rem; border-left: 5px solid var(--primary); padding-left: 15px; font-size: 2rem; }
+
+        /* --- ACCUEIL --- */
+        .hero {
+            background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('https://images.unsplash.com/photo-1522071820081-009f0129c71c?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80');
+            background-size: cover;
+            background-position: center;
+            color: white;
+            padding: 4rem;
+            border-radius: 15px;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .hero h2 { font-size: 2.5rem; margin-bottom: 1rem; }
+        .hero-btn { display: inline-block; background: var(--primary); color: white; padding: 10px 25px; border-radius: 5px; text-decoration: none; margin-top: 1rem; cursor: pointer; transition: 0.3s; }
+        .hero-btn:hover { background: var(--primary-dark); }
+
+        /* --- À PROPOS (Tabs) --- */
+        .tabs { display: flex; gap: 10px; margin-bottom: 2rem; border-bottom: 2px solid #ddd; overflow-x: auto;}
+        .tab-btn {
+            padding: 10px 20px;
+            background: none;
+            border: none;
+            font-size: 1rem;
+            cursor: pointer;
+            color: var(--grey);
+            font-weight: 600;
+            position: relative;
+        }
+        .tab-btn.active { color: var(--primary); }
+        .tab-btn.active::after { content: ''; position: absolute; bottom: -2px; left: 0; width: 100%; height: 2px; background: var(--primary); }
+
+        .about-content { background: var(--white); padding: 2rem; border-radius: 10px; box-shadow: var(--shadow); }
+        .about-block { display: none; }
+        .about-block.active { display: block; }
+        
+        /* Organigramme visuel simple */
+        .org-chart { display: flex; flex-direction: column; align-items: center; gap: 20px; padding: 20px; }
+        .org-box { background: var(--white); border: 2px solid var(--primary); padding: 15px 30px; border-radius: 8px; font-weight: bold; text-align: center; box-shadow: var(--shadow); width: 250px; }
+        .org-row { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; }
+        .connector { width: 2px; height: 20px; background: #ccc; }
+
+        /* --- DÉPARTEMENTS (Grid) --- */
+        .dept-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 2rem; }
+        .dept-card {
+            background: var(--white);
+            border-radius: 10px;
+            padding: 2rem;
+            box-shadow: var(--shadow);
+            transition: transform 0.3s, box-shadow 0.3s;
+            cursor: pointer;
+            border-top: 4px solid transparent;
+        }
+        .dept-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); border-top-color: var(--primary); }
+        .dept-icon { font-size: 2.5rem; color: var(--primary); margin-bottom: 1rem; }
+        .dept-title { font-size: 1.2rem; font-weight: bold; margin-bottom: 0.5rem; }
+        .tool-tag { background: var(--dark); color: white; padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; display: inline-block; margin-top: 10px; }
+
+        /* --- LOGIN --- */
+        .login-container { max-width: 400px; margin: 4rem auto; background: var(--white); padding: 2rem; border-radius: 10px; box-shadow: var(--shadow); text-align: center; }
+        .form-group { margin-bottom: 1.5rem; text-align: left; }
+        .form-group label { display: block; margin-bottom: 0.5rem; color: var(--grey); }
+        .form-group input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
+        .login-submit { width: 100%; background: var(--primary); color: white; padding: 12px; border: none; border-radius: 5px; font-size: 1rem; cursor: pointer; }
+
+        /* --- MODAL --- */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center; }
+        .modal-overlay.active { display: flex; animation: fadeIn 0.3s; }
+        .modal-box { background: var(--white); padding: 2rem; border-radius: 10px; width: 90%; max-width: 600px; position: relative; max-height: 90vh; overflow-y: auto; }
+        .close-modal { position: absolute; top: 15px; right: 20px; font-size: 1.5rem; cursor: pointer; color: #999; }
+        .modal-header { border-bottom: 1px solid #eee; padding-bottom: 1rem; margin-bottom: 1rem; }
+        .modal-header h2 { color: var(--primary); }
+
+        /* --- FOOTER --- */
+        footer { background: var(--dark); color: #777; text-align: center; padding: 2rem; margin-top: auto; }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo">Net<span>Market</span></div>
+        <nav>
+            <ul>
+                <li><a onclick="navigate('home')" class="active" id="nav-home">Accueil</a></li>
+                <li><a onclick="navigate('about')" id="nav-about">À propos de nous</a></li>
+                <li><a onclick="navigate('departments')" id="nav-departments">Départements</a></li>
+                <li><a onclick="navigate('login')" class="login-btn-nav" id="nav-login">Login</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main id="main-content">
+
+        <section id="home" class="page-section active">
+            <div class="hero">
+                <h2>Bienvenue sur le portail NetMarket</h2>
+                <p>Leader européen du e-commerce de mode et lifestyle.</p>
+                <br>
+                <button onclick="navigate('departments')" class="hero-btn">Explorer nos solutions</button>
+            </div>
+            
+            <div style="display: flex; gap: 20px; margin-top: 2rem;">
+                <div style="flex:1; background:white; padding:2rem; border-radius:10px; box-shadow:var(--shadow);">
+                    <i class="fas fa-rocket fa-2x" style="color:var(--primary); margin-bottom:1rem;"></i>
+                    <h3>Innovation</h3>
+                    <p>Transformation digitale de tous nos départements pour 2025.</p>
+                </div>
+                <div style="flex:1; background:white; padding:2rem; border-radius:10px; box-shadow:var(--shadow);">
+                    <i class="fas fa-users fa-2x" style="color:var(--primary); margin-bottom:1rem;"></i>
+                    <h3>Collaboration</h3>
+                    <p>18 000 collaborateurs connectés via nos nouveaux outils.</p>
+                </div>
+                <div style="flex:1; background:white; padding:2rem; border-radius:10px; box-shadow:var(--shadow);">
+                    <i class="fas fa-globe-europe fa-2x" style="color:var(--primary); margin-bottom:1rem;"></i>
+                    <h3>Expansion</h3>
+                    <p>Une présence stratégique au cœur de l'Europe.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="about" class="page-section">
+            <h1 class="page-title">À propos de NetMarket</h1>
+            
+            <div class="tabs">
+                <button class="tab-btn active" onclick="openTab(event, 'mission')">Objectif & Mission</button>
+                <button class="tab-btn" onclick="openTab(event, 'general')">Présentation</button>
+                <button class="tab-btn" onclick="openTab(event, 'hierarchy')">Organigramme</button>
+                <button class="tab-btn" onclick="openTab(event, 'values')">Valeurs & RSE</button>
+                <button class="tab-btn" onclick="openTab(event, 'projects')">Projets Futurs</button>
+            </div>
+
+            <div class="about-content">
+                <div id="mission" class="about-block active">
+                    <h3>Notre Mission</h3>
+                    <p>NetMarket a pour mission de révolutionner l'expérience d'achat en ligne en combinant mode, technologie et durabilité. Nous visons à offrir à nos 50 millions de clients une plateforme fluide, personnalisée et responsable.</p>
+                </div>
+
+                <div id="general" class="about-block">
+                    <h3>Présentation Générale</h3>
+                    <ul>
+                        <li><strong>Création :</strong> 2008</li>
+                        <li><strong>Siège :</strong> Yverdon-les-Bains</li>
+                        <li><strong>Chiffre d'Affaires 2024 :</strong> 11.1 Milliards €</li>
+                        <li><strong>Clients Actifs :</strong> 50 Millions</li>
+                        <li><strong>Partenaires :</strong> +3000 Marques</li>
+                    </ul>
+                </div>
+
+                <div id="hierarchy" class="about-block">
+                    <h3>Hiérarchie Simplifiée</h3>
+                    <div class="org-chart">
+                        <div class="org-box" style="background-color: var(--dark); color:white; border:none;">CEO / Direction Générale</div>
+                        <div class="connector"></div>
+                        <div class="org-row">
+                            <div class="org-box">Direction Stratégique</div>
+                            <div class="org-box">Direction Opérationnelle</div>
+                        </div>
+                        <div class="connector"></div>
+                        <div class="org-row">
+                            <div class="org-box" style="font-size:0.9rem;">RH</div>
+                            <div class="org-box" style="font-size:0.9rem;">Finance</div>
+                            <div class="org-box" style="font-size:0.9rem;">IT & Tech</div>
+                            <div class="org-box" style="font-size:0.9rem;">Logistique</div>
+                            <div class="org-box" style="font-size:0.9rem;">Marketing</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="values" class="about-block">
+                    <h3>Nos Valeurs & Engagements RSE</h3>
+                    <p><strong>Durabilité :</strong> Objectif neutralité carbone 2030, emballages recyclés, logistique verte.</p>
+                    <p><strong>Inclusion :</strong> Politique stricte de diversité et égalité salariale.</p>
+                    <p><strong>Innovation :</strong> L'IA au service de l'humain et de l'expérience client.</p>
+                </div>
+
+                <div id="projects" class="about-block">
+                    <h3>Projets Futurs</h3>
+                    <ol style="margin-left: 20px;">
+                        <li>Expansion vers le marché Nord-Américain (USA/Canada).</li>
+                        <li>Automatisation robotique à 100% des nouveaux entrepôts.</li>
+                        <li>Lancement de l'application "Seconde Main" intégrée.</li>
+                    </ol>
+                </div>
+            </div>
+        </section>
+
+        <section id="departments" class="page-section">
+            <h1 class="page-title">Nos Départements & Outils</h1>
+            <p style="margin-bottom: 2rem;">Cliquez sur un département pour découvrir sa solution dédiée.</p>
+            
+            <div class="dept-grid" id="dept-grid-container">
+                </div>
+        </section>
+
+        <section id="login" class="page-section">
+            <div class="login-container">
+                <div class="logo" style="margin-bottom: 2rem;">Net<span>Market</span> Portal</div>
+                <div class="form-group">
+                    <label>Identifiant Employé</label>
+                    <input type="text" placeholder="ex: j.dupont@netmarket.com">
+                </div>
+                <div class="form-group">
+                    <label>Mot de passe</label>
+                    <input type="password" placeholder="••••••••">
+                </div>
+                <button class="login-submit" onclick="alert('Connexion simulée réussie ! Bienvenue sur le portail.')">Se connecter</button>
+                <p style="margin-top: 1rem; font-size: 0.8rem; color: #888;">Accès réservé au personnel autorisé.</p>
+            </div>
+        </section>
+
+    </main>
+
+    <footer>
+        <p>© 2025 NetMarket SA - Yverdon-les-Bains. Projet Académique.</p>
+    </footer>
+
+    <div id="modal" class="modal-overlay">
+        <div class="modal-box">
+            <span class="close-modal" onclick="closeModal()">&times;</span>
+            <div class="modal-header">
+                <h2 id="modal-title">Titre Outil</h2>
+                <p id="modal-dept" style="color: #666; margin-top: 5px;">Département</p>
+            </div>
+            <div id="modal-body">
+                </div>
+        </div>
+    </div>
+
+    <script>
+        // --- DONNÉES DES DÉPARTEMENTS ---
+        const departmentsData = [
+            {
+                id: "direction",
+                name: "Direction / Stratégie",
+                icon: "fa-chess",
+                tool: "StartVision",
+                desc: "Outil de pilotage stratégique et aide à la décision.",
+                features: "Balanced Scorecard, Power BI, IA Prédictive, Veille concurrentielle."
+            },
+            {
+                id: "rh",
+                name: "Ressources Humaines",
+                icon: "fa-users",
+                tool: "HR SmartSuite",
+                desc: "Gestion complète du cycle de vie collaborateur.",
+                features: "Workable (Recrutement), Rippling (Paie/Admin), Sana Learn (Formation IA)."
+            },
+            {
+                id: "finance",
+                name: "Finance & Comptabilité",
+                icon: "fa-chart-line",
+                tool: "FinOptima",
+                desc: "Automatisation et pilotage financier.",
+                features: "QuickBook, MindBridge (Audit IA), Anaplan (Simulation)."
+            },
+            {
+                id: "achat",
+                name: "Achat & Sourcing",
+                icon: "fa-shopping-cart",
+                tool: "SourceLink",
+                desc: "Optimisation des relations fournisseurs.",
+                features: "Ivalua (SRM), PreWave (Risques), Analyse des coûts."
+            },
+            {
+                id: "design",
+                name: "Design & Collection",
+                icon: "fa-pencil-ruler",
+                tool: "NetDesignX",
+                desc: "Création et prototypage virtuel.",
+                features: "CLO 3D, WGSN (Tendances), Gestion de collection."
+            },
+            {
+                id: "catalogue",
+                name: "Catalogue / E-Merch",
+                icon: "fa-tags",
+                tool: "NetCatX",
+                desc: "Centralisation des données produits (PIM).",
+                features: "Akeneo PIM, Salsify, Synchronisation E-shop."
+            },
+            {
+                id: "marketing",
+                name: "Marketing & Com",
+                icon: "fa-bullhorn",
+                tool: "NetMarkX",
+                desc: "Gestion des campagnes et image de marque.",
+                features: "HubSpot, Google Analytics 4, Hootsuite, IA Générative (Contenu)."
+            },
+            {
+                id: "service",
+                name: "Service Client",
+                icon: "fa-headset",
+                tool: "NetCareX",
+                desc: "CRM et support client omnicanal.",
+                features: "Salesforce Service Cloud, Zendesk, Chatbot IA."
+            },
+            {
+                id: "logistique",
+                name: "Logistique & Supply",
+                icon: "fa-truck-loading",
+                tool: "NetLogX",
+                desc: "Gestion des flux physiques et livraisons.",
+                features: "WMS (Entrepôt), TMS (Transport), Suivi temps réel."
+            },
+            {
+                id: "it",
+                name: "IT / Dev & UX",
+                icon: "fa-laptop-code",
+                tool: "UXTrack360 AI",
+                desc: "Développement et expérience utilisateur.",
+                features: "Jira, Figma, Analyse comportementale IA."
+            },
+            {
+                id: "qualite",
+                name: "Qualité & RSE",
+                icon: "fa-leaf",
+                tool: "TextiGreen AI",
+                desc: "Conformité et développement durable.",
+                features: "QMS, Calculateur Empreinte Carbone, Suivi Certificats."
+            }
+        ];
+
+        // --- NAVIGATION ---
+        function navigate(pageId) {
+            // Cacher toutes les sections
+            document.querySelectorAll('.page-section').forEach(sec => sec.classList.remove('active'));
+            document.querySelectorAll('nav a').forEach(link => link.classList.remove('active'));
+
+            // Afficher la section demandée
+            document.getElementById(pageId).classList.add('active');
+            
+            // Mettre à jour le menu (sauf si login)
+            const navLink = document.getElementById('nav-' + pageId);
+            if (navLink) navLink.classList.add('active');
+        }
+
+        // --- ONGLETS (TABS) À PROPOS ---
+        function openTab(evt, tabName) {
+            // Cacher tous les blocs
+            document.querySelectorAll('.about-block').forEach(block => block.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+
+            // Afficher le bon bloc
+            document.getElementById(tabName).classList.add('active');
+            evt.currentTarget.classList.add('active');
+        }
+
+        // --- GÉNÉRATION GRILLE DÉPARTEMENTS ---
+        function renderDepartments() {
+            const grid = document.getElementById('dept-grid-container');
+            grid.innerHTML = '';
+
+            departmentsData.forEach(dept => {
+                const card = document.createElement('div');
+                card.className = 'dept-card';
+                card.onclick = () => showModal(dept);
+                card.innerHTML = `
+                    <div class="dept-icon"><i class="fas ${dept.icon}"></i></div>
+                    <div class="dept-title">${dept.name}</div>
+                    <div style="font-size:0.9rem; color:#666; margin-bottom:10px;">${dept.desc}</div>
+                    <span class="tool-tag">${dept.tool}</span>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        // --- MODAL ---
+        function showModal(dept) {
+            document.getElementById('modal-title').innerText = "Solution : " + dept.tool;
+            document.getElementById('modal-dept').innerText = "Département : " + dept.name;
+            
+            document.getElementById('modal-body').innerHTML = `
+                <div style="margin-bottom:15px;">
+                    <h4 style="color:#333; margin-bottom:5px;">Description</h4>
+                    <p>${dept.desc}</p>
+                </div>
+                <div>
+                    <h4 style="color:#333; margin-bottom:5px;">Fonctionnalités & Technologies</h4>
+                    <p style="background:#f4f6f8; padding:10px; border-radius:5px;">${dept.features}</p>
+                </div>
+                <div style="margin-top:20px; text-align:right;">
+                    <button onclick="closeModal()" style="background:var(--primary); color:white; border:none; padding:8px 15px; border-radius:4px; cursor:pointer;">Fermer</button>
+                </div>
+            `;
+            
+            document.getElementById('modal').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.remove('active');
+            document.body.style.overflow = 'auto';
+        }
+
+        // Fermer modal si clic dehors
+        window.onclick = function(event) {
+            const modal = document.getElementById('modal');
+            if (event.target == modal) {
+                closeModal();
+            }
+        }
+
+        // Initialisation
+        renderDepartments();
+    </script>
+
+</body>
+</html>
