@@ -2581,8 +2581,9 @@ window.addEventListener('keydown', (e)=>{
   }
 });
   /* ===========================
-  PATCH: SIMULATIONS RÉALISTES
-  (COLLER ICI, SANS <script>)
+   PATCH: SIMULATIONS RÉALISTES (PROPRE)
+   - Ne jamais mettre <script> ici
+   - Ne jamais mettre <!-- --> ici
 =========================== */
 
 function nmModal(title, html){
@@ -2595,6 +2596,7 @@ function nmModal(title, html){
   host.style.alignItems='center';
   host.style.justifyContent='center';
   host.style.padding='18px';
+
   host.innerHTML = `
     <div style="width:min(980px, 96vw);max-height:92vh;overflow:auto;
                 background:#0f1216;border:1px solid rgba(255,255,255,.12);
@@ -2610,21 +2612,42 @@ function nmModal(title, html){
     </div>
   `;
   document.body.appendChild(host);
+
   host.querySelector('#nmCloseBtn').onclick = ()=> host.remove();
   host.addEventListener('click', (e)=>{ if(e.target===host) host.remove(); });
   return host;
 }
 
-// ⚠️ IMPORTANT: inject après que le DOM existe
-window.addEventListener('load', ()=>{
-  if(typeof injectSimPanels === 'function'){
-    injectSimPanels();
+function injectSimPanels(){
+  const designSec = document.getElementById('design');
+  if(designSec && !document.getElementById('designSimCard')){
+    designSec.insertAdjacentHTML('beforeend', `
+      <div class="card" id="designSimCard" style="margin-top:16px;">
+        <div class="toolbar">
+          <div class="toolbar-left">
+            <h3 style="margin:0;">Simulations Design (réaliste)</h3>
+            <span class="pill info"><i class="fas fa-shirt"></i> Tech Pack / BOM</span>
+          </div>
+          <div class="toolbar-right">
+            <button class="btn secondary" onclick="nmModal('NetDesignX — Tech Pack', '<div class=card style=background:#0f1216>Démo Tech Pack: ici tu mets tes éléments (BOM, mesures, images).</div>')">
+              <i class="fas fa-file-lines"></i> Ouvrir Tech Pack
+            </button>
+          </div>
+        </div>
+        <div class="hint">Démo: Design → validation → handoff Catalogue (PIM).</div>
+      </div>
+    `);
   }
-});
+}
 
+// IMPORTANT: lancer après que le DOM est prêt
+window.addEventListener('load', ()=>{
+  injectSimPanels();
+});
 </script>
 </body>
 </html>
+
 
 
 
