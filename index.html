@@ -2077,8 +2077,514 @@
         if(modal.classList.contains('active')) fsClose();
       }
     });
+    <!-- ===========================
+  PATCH: SIMULATIONS RÉALISTES (Design / Cat / Mark / Care)
+  À coller juste avant </script>
+=========================== -->
+<script>
+/* -----------------------------------------------------------
+  1) UI HELPERS: modal light + small widgets (no deps)
+----------------------------------------------------------- */
+function nmModal(title, html){
+  const host = document.createElement('div');
+  host.style.position='fixed';
+  host.style.inset='0';
+  host.style.background='rgba(0,0,0,.72)';
+  host.style.zIndex='9000';
+  host.style.display='flex';
+  host.style.alignItems='center';
+  host.style.justifyContent='center';
+  host.style.padding='18px';
+  host.innerHTML = `
+    <div style="width:min(980px, 96vw);max-height:92vh;overflow:auto;
+                background:#0f1216;border:1px solid rgba(255,255,255,.12);
+                border-radius:16px;box-shadow:0 20px 70px rgba(0,0,0,.65);">
+      <div style="display:flex;align-items:center;justify-content:space-between;
+                  padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.08);background:#0b0c10">
+        <div style="font-weight:900;color:#fff">${title}</div>
+        <button class="btn secondary" style="padding:7px 10px" id="nmCloseBtn">
+          <i class="fas fa-xmark"></i> Fermer
+        </button>
+      </div>
+      <div style="padding:14px">${html}</div>
+    </div>
+  `;
+  document.body.appendChild(host);
+  host.querySelector('#nmCloseBtn').onclick = ()=> host.remove();
+  host.addEventListener('click', (e)=>{ if(e.target===host) host.remove(); });
+  return host;
+}
+
+function kpiBump(id, min, max, suffix=''){
+  const v = rand(min,max);
+  setText(id, `${v}${suffix}`);
+  return v;
+}
+
+/* -----------------------------------------------------------
+  2) DATASETS DÉMO (réalistes)
+----------------------------------------------------------- */
+const DEMO = {
+  design:{
+    product:{
+      ref:'NM-DES-2026-017',
+      name:'Veste Hiver “Aurora”',
+      collection:'FW26',
+      materials:[
+        {code:'FAB-001', name:'Laine mérinos', color:'Noir', supplier:'Sonceboz Textile', lead:'18j'},
+        {code:'LIN-014', name:'Doublure satin', color:'Bordeaux', supplier:'Leman Linings', lead:'12j'},
+        {code:'BTN-033', name:'Bouton métal', color:'Or', supplier:'Alpine Trims', lead:'9j'},
+      ],
+      steps:[
+        {t:'Préparer pièces', d:'Découpe + repérage couture. Contrôle des défauts tissu.'},
+        {t:'Assembler doublure', d:'Coutures internes, renforts épaules, surpiqûre.'},
+        {t:'Monter manches', d:'Ajuster embu, contrôle symétrie, points de maintien.'},
+        {t:'Finition', d:'Pose boutons, repassage, étiquettes, QC final.'}
+      ],
+      grading:[
+        {size:'XS', chest:92, waist:78, length:64},
+        {size:'S',  chest:96, waist:82, length:66},
+        {size:'M',  chest:100,waist:86, length:68},
+        {size:'L',  chest:106,waist:92, length:70},
+        {size:'XL', chest:112,waist:98, length:72},
+      ]
+    }
+  },
+
+  catalogue:{
+    sku:[
+      {sku:'AUR-FW26-BLK-S', title:'Aurora Jacket Black - S', price:189, stock:42, seo: 'OK', imgs:'OK'},
+      {sku:'AUR-FW26-BLK-M', title:'Aurora Jacket Black - M', price:189, stock:38, seo: 'OK', imgs:'OK'},
+      {sku:'AUR-FW26-BLK-L', title:'Aurora Jacket Black - L', price:189, stock:25, seo: 'WARN', imgs:'OK'},
+      {sku:'AUR-FW26-BRD-M', title:'Aurora Lining Bordeaux - M', price:189, stock:10, seo: 'OK', imgs:'WARN'}
+    ],
+    channels:[
+      {name:'Shopify', status:'READY', latency:'120ms'},
+      {name:'Amazon', status:'READY', latency:'240ms'},
+      {name:'Zalando', status:'READY', latency:'310ms'},
+      {name:'Mobile App', status:'READY', latency:'150ms'}
+    ]
+  },
+
+  marketing:{
+    abandoned:[
+      {client:'Julie M.', email:'julie@mail.demo', cart: ['AUR-FW26-BLK-M'], value:189},
+      {client:'Karim S.', email:'karim@mail.demo', cart: ['AUR-FW26-BLK-S','AUR-FW26-BRD-M'], value:378},
+      {client:'Emma R.', email:'emma@mail.demo', cart: ['AUR-FW26-BLK-L'], value:189},
+    ]
+  },
+
+  care:{
+    orders:{
+      '100184': {status:'In transit', carrier:'La Poste', eta:'Demain', tracking:'LP-CH-88241'},
+      '100209': {status:'Delivered', carrier:'DPD', eta:'Livré', tracking:'DPD-10922'},
+      '100233': {status:'Label created', carrier:'La Poste', eta:'2-3 jours', tracking:'LP-CH-99017'},
+    },
+    intents:[
+      {text:"Où est mon colis ?", intent:'WISMO', score:0.93},
+      {text:"Je veux retourner l'article", intent:'RETURN', score:0.91},
+      {text:"Je n'ai pas reçu mon remboursement", intent:'REFUND', score:0.88},
+      {text:"Je veux changer de taille", intent:'EXCHANGE', score:0.89},
+    ]
+  }
+};
+
+/* -----------------------------------------------------------
+  3) INJECT UI BUTTONS / PANELS dans chaque section
+----------------------------------------------------------- */
+function injectSimPanels(){
+  // === DESIGN panel add-on (cards already exist)
+  const designSec = document.getElementById('design');
+  if(designSec && !document.getElementById('designSimCard')){
+    const html = `
+      <div class="card" id="designSimCard" style="margin-top:16px;">
+        <div class="toolbar">
+          <div class="toolbar-left">
+            <h3 style="margin:0;">Simulations Design (réaliste)</h3>
+            <span class="pill info"><i class="fas fa-shirt"></i> Tech Pack / BOM / Gradation</span>
+          </div>
+          <div class="toolbar-right">
+            <button class="btn secondary" onclick="openDesignAssembler()"><i class="fas fa-screwdriver-wrench"></i> Instructions assemblage</button>
+            <button class="btn secondary" onclick="openDesignBOM()"><i class="fas fa-layer-group"></i> Nomenclature tissus</button>
+            <button class="btn secondary" onclick="openDesignGrading()"><i class="fas fa-ruler-combined"></i> Tableau mesures</button>
+            <button class="btn" onclick="designGenerateTechPack()"><i class="fas fa-file-lines"></i> Générer Tech Pack</button>
+          </div>
+        </div>
+        <div class="hint">Démo: tu montres un “flux” concret: Design → validation data → handoff vers Catalogue (PIM).</div>
+      </div>
+    `;
+    designSec.insertAdjacentHTML('beforeend', html);
+  }
+
+  // === CATALOGUE panel add-on
+  const catSec = document.getElementById('cat');
+  if(catSec && !document.getElementById('catSimCard')){
+    const html = `
+      <div class="card" id="catSimCard" style="margin-top:16px;">
+        <div class="toolbar">
+          <div class="toolbar-left">
+            <h3 style="margin:0;">Simulations Catalogue (canaux)</h3>
+            <span class="pill info"><i class="fas fa-store"></i> Shopify / Marketplaces / App</span>
+          </div>
+          <div class="toolbar-right">
+            <button class="btn secondary" onclick="catPreviewFeeds()"><i class="fas fa-file-csv"></i> Preview feed</button>
+            <button class="btn secondary" onclick="catSyncShopify()"><i class="fab fa-shopify"></i> Sync Shopify</button>
+            <button class="btn secondary" onclick="catExportMarketplace()"><i class="fas fa-truck-fast"></i> Export Amazon/Zalando</button>
+            <button class="btn" onclick="catPublishMobile()"><i class="fas fa-mobile-screen"></i> Publier App</button>
+          </div>
+        </div>
+        <div class="hint">Démo: tu simules une publication multi-canal + gestion erreurs (SEO/images).</div>
+      </div>
+    `;
+    catSec.insertAdjacentHTML('beforeend', html);
+  }
+
+  // === MARKETING panel add-on
+  const markSec = document.getElementById('promo');
+  if(markSec && !document.getElementById('markSimCard')){
+    const html = `
+      <div class="card" id="markSimCard" style="margin-top:16px;">
+        <div class="toolbar">
+          <div class="toolbar-left">
+            <h3 style="margin:0;">Scénario “Panier abandonné”</h3>
+            <span class="pill warn"><i class="fas fa-cart-shopping"></i> Recovery automation</span>
+          </div>
+          <div class="toolbar-right">
+            <button class="btn secondary" onclick="markSimulateAbandon()"><i class="fas fa-user-clock"></i> Simuler abandon</button>
+            <button class="btn secondary" onclick="markRunAbandonedFlow()"><i class="fas fa-play"></i> Lancer flow</button>
+            <button class="btn" onclick="markShowRecoveryReport()"><i class="fas fa-chart-line"></i> Rapport récupérations</button>
+          </div>
+        </div>
+        <div class="hint"><b>Règle:</b> T+1h email utile → T+24h incentive (livraison gratuite si besoin).</div>
+      </div>
+    `;
+    markSec.insertAdjacentHTML('beforeend', html);
+  }
+
+  // === CARE panel add-on
+  const careSec = document.getElementById('care');
+  if(careSec && !document.getElementById('careSimCard')){
+    const html = `
+      <div class="card" id="careSimCard" style="margin-top:16px;">
+        <div class="toolbar">
+          <div class="toolbar-left">
+            <h3 style="margin:0;">Assistant Service Client (IA + Shopify)</h3>
+            <span class="pill info"><i class="fas fa-robot"></i> Intent + API + Auto-reply</span>
+          </div>
+          <div class="toolbar-right">
+            <button class="btn secondary" onclick="careSimulateMessage()"><i class="fas fa-message"></i> Simuler message client</button>
+            <button class="btn secondary" onclick="careFetchOrderStatus()"><i class="fas fa-plug"></i> Connexion API Shopify</button>
+            <button class="btn" onclick="careAutoReply()"><i class="fas fa-bolt"></i> Réponse immédiate</button>
+          </div>
+        </div>
+        <div class="hint">Démo: “Où est mon colis ?” → statut réel Shopify → réponse instantanée + log + SLA.</div>
+      </div>
+    `;
+    careSec.insertAdjacentHTML('beforeend', html);
+  }
+}
+injectSimPanels();
+
+/* -----------------------------------------------------------
+  4) DESIGN SIM (assembler / BOM / grading)
+----------------------------------------------------------- */
+function openDesignAssembler(){
+  const p = DEMO.design.product;
+  const steps = p.steps.map((s,i)=>`
+    <div class="card" style="margin-bottom:10px;background:#0f1216">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+        <div style="font-weight:900;color:#fff">${i+1}. ${s.t}</div>
+        <span class="pill info"><i class="fas fa-image"></i> Visuel (démo)</span>
+      </div>
+      <div class="muted" style="margin-top:6px">${s.d}</div>
+      <div style="margin-top:10px;border:1px dashed rgba(255,255,255,.14);border-radius:12px;padding:14px;color:#9aa3ad;text-align:center">
+        Zone image / schéma d’assemblage (tu peux mettre un PNG plus tard)
+      </div>
+    </div>
+  `).join('');
+  nmModal('NetDesignX — Instructions d’assemblage', `
+    <div class="pill info" style="margin-bottom:10px"><i class="fas fa-hashtag"></i> ${p.ref} — ${p.name} (${p.collection})</div>
+    ${steps}
+  `);
+  pushLog('NetDesignX','UI','Open assembly instructions','OK');
+  audit('Admin','NetDesignX','OPEN','assembly_instructions','INFO');
+}
+
+function openDesignBOM(){
+  const m = DEMO.design.product.materials;
+  const rows = m.map(x=>`
+    <tr>
+      <td class="mono" style="font-size:.82rem">${x.code}</td>
+      <td>${x.name}</td>
+      <td>${x.color}</td>
+      <td>${x.supplier}</td>
+      <td class="td-right"><span class="pill info">${x.lead}</span></td>
+    </tr>
+  `).join('');
+  nmModal('NetDesignX — Nomenclature couleurs & tissus (BOM)', `
+    <table class="data-table">
+      <thead><tr><th>Code</th><th>Matière</th><th>Couleur</th><th>Fournisseur</th><th class="td-right">Lead</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <div class="hr"></div>
+    <button class="btn" onclick="designExportBOM()"><i class="fas fa-file-export"></i> Export BOM (CSV)</button>
+  `);
+  pushLog('NetDesignX','BOM','Preview materials + colors','OK');
+  audit('Admin','NetDesignX','PREVIEW','BOM','INFO');
+}
+
+function designExportBOM(){
+  const m = DEMO.design.product.materials;
+  const header = ['code','material','color','supplier','lead'];
+  const lines = [header.join(',')].concat(m.map(x=>[x.code,x.name,x.color,x.supplier,x.lead].map(v=>`"${String(v).replaceAll('"','""')}"`).join(',')));
+  downloadFile('netdesignx_bom.csv', lines.join('\n'));
+  toast('ok','Export','BOM exporté: netdesignx_bom.csv');
+  pushLog('NetDesignX','Export','BOM CSV','OK');
+  audit('Admin','NetDesignX','EXPORT','BOM=csv','INFO');
+}
+
+function openDesignGrading(){
+  const g = DEMO.design.product.grading;
+  const rows = g.map(r=>`
+    <tr>
+      <td><span class="pill info">${r.size}</span></td>
+      <td class="td-right mono">${r.chest}</td>
+      <td class="td-right mono">${r.waist}</td>
+      <td class="td-right mono">${r.length}</td>
+    </tr>
+  `).join('');
+  nmModal('NetDesignX — Tableau mesures exactes (Gradation)', `
+    <div class="hint">Démo: gradation standard. (Tu peux expliquer “XS→XL + règles de grading”.)</div>
+    <table class="data-table">
+      <thead><tr><th>Taille</th><th class="td-right">Poitrine (cm)</th><th class="td-right">Taille (cm)</th><th class="td-right">Longueur (cm)</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <div class="hr"></div>
+    <div class="pill warn"><i class="fas fa-circle-info"></i> Option: ajouter calcul auto (écarts) si tu veux.</div>
+  `);
+  pushLog('NetDesignX','Grading','Preview measures table','OK');
+  audit('Admin','NetDesignX','PREVIEW','grading_table','INFO');
+}
+
+function designGenerateTechPack(){
+  // simulate generation + KPI impact
+  const cycle = rand(8,14);
+  setText('dLead', `${(cycle/3).toFixed(1)} j`);
+  setText('dFirstPass', `${rand(78,92)}%`);
+  toast('ok','Tech Pack', 'Tech Pack généré (démo). Passage au Gate de validation.');
+  pushLog('NetDesignX','TechPack','Generated + ready for validation','OK');
+  audit('Admin','NetDesignX','GENERATE','tech_pack','INFO');
+  // optional: auto-run workflow design
+  termLog('design', 'TECH PACK: génération doc + contrôle complétude', 'OK');
+}
+
+/* -----------------------------------------------------------
+  5) CATALOGUE SIM (Shopify / marketplaces / mobile)
+----------------------------------------------------------- */
+function catPreviewFeeds(){
+  const sku = DEMO.catalogue.sku;
+  const rows = sku.map(s=>`
+    <tr>
+      <td class="mono">${s.sku}</td>
+      <td>${s.title}</td>
+      <td class="td-right mono">${s.price} CHF</td>
+      <td class="td-right mono">${s.stock}</td>
+      <td class="td-right"><span class="pill ${s.seo==='OK'?'ok':'warn'}">${s.seo}</span></td>
+      <td class="td-right"><span class="pill ${s.imgs==='OK'?'ok':'warn'}">${s.imgs}</span></td>
+    </tr>
+  `).join('');
+  nmModal('NetCatX — Preview feed produits', `
+    <table class="data-table">
+      <thead><tr><th>SKU</th><th>Titre</th><th class="td-right">Prix</th><th class="td-right">Stock</th><th class="td-right">SEO</th><th class="td-right">Images</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <div class="hr"></div>
+    <div class="hint">Démo: tu expliques “data quality” (SEO/images) avant publication multi-canal.</div>
+  `);
+  pushLog('NetCatX','Feed','Preview products feed','OK');
+  audit('Admin','NetCatX','PREVIEW','feed','INFO');
+}
+
+function catSyncShopify(){
+  const ok = rand(92,99);
+  setText('cPub', `${rand(8,22)} min`);
+  setText('cErrRate', (Math.random()*1.2).toFixed(1));
+  toast('ok','Shopify','Sync terminé (démo).');
+  pushLog('NetCatX','Shopify','Sync completed','OK');
+  audit('Admin','NetCatX','SYNC','shopify','INFO');
+  termLog('cat', `SHOPIFY: push ${rand(80,260)} items — succès ${ok}%`, 'OK');
+}
+
+function catExportMarketplace(){
+  const fails = rand(0,3);
+  toast(fails? 'warn':'ok','Marketplaces', fails? `${fails} SKU en erreur (SEO/images).` : 'Export Amazon/Zalando OK.');
+  pushLog('NetCatX','Marketplace', fails? `Export with ${fails} errors` : 'Export OK', fails?'WARN':'OK');
+  audit('Admin','NetCatX','EXPORT', `amazon+zalando errors=${fails}`, fails?'WARN':'INFO');
+  termLog('cat', `MARKETPLACE: feed export — errors=${fails}`, fails?'WARN':'OK');
+}
+
+function catPublishMobile(){
+  toast('ok','Mobile App','Catalogue publié côté App (démo).');
+  pushLog('NetCatX','Mobile','Publish app catalogue','OK');
+  audit('Admin','NetCatX','PUBLISH','mobile_app','INFO');
+  termLog('cat', 'APP: push catalogue + cache refresh', 'OK');
+}
+
+/* -----------------------------------------------------------
+  6) MARKETING SIM (abandoned cart scenario)
+----------------------------------------------------------- */
+let MARK_STATE = { lastAbandon:null, recovered:0, revenue:0 };
+
+function markSimulateAbandon(){
+  const c = pick(DEMO.marketing.abandoned);
+  MARK_STATE.lastAbandon = c;
+  toast('warn','Panier abandonné', `${c.client} a quitté le checkout — valeur ${c.value} CHF`);
+  pushLog('NetMarkX','Trigger','Abandoned cart detected','WARN');
+  audit('System','NetMarkX','TRIGGER',`abandon client=${c.client} value=${c.value}`, 'WARN');
+  termLog('mark', `TRIGGER: abandon checkout — ${c.client} (${c.value} CHF)`, 'WARN');
+}
+
+function markRunAbandonedFlow(){
+  const c = MARK_STATE.lastAbandon || pick(DEMO.marketing.abandoned);
+  MARK_STATE.lastAbandon = c;
+
+  termLog('mark', `T+1h: Email rappel (serviable) → ${c.email}`, 'OK');
+  pushLog('NetMarkX','Flow','T+1h reminder email','OK');
+
+  setTimeout(()=> {
+    const needsIncentive = Math.random() < 0.55;
+    if(needsIncentive){
+      termLog('mark', `T+24h: Offer livraison gratuite (si nécessaire)`, 'OK');
+      pushLog('NetMarkX','Flow','T+24h free shipping offer','OK');
+    } else {
+      termLog('mark', `T+24h: No incentive (client réactif)`, 'INFO');
+    }
+
+    // conversion simulation
+    const converted = Math.random() < (needsIncentive ? 0.58 : 0.42);
+    if(converted){
+      MARK_STATE.recovered += 1;
+      MARK_STATE.revenue += c.value;
+      toast('ok','Recovered', `Vente récupérée: +${c.value} CHF`);
+      pushLog('NetMarkX','Conversion',`Recovered ${c.value} CHF`,'OK');
+      audit('System','NetMarkX','CONVERSION',`recovered value=${c.value}`, 'INFO');
+    } else {
+      toast('warn','Non converti', 'Le client n’a pas finalisé (démo).');
+      pushLog('NetMarkX','Conversion','No conversion','WARN');
+      audit('System','NetMarkX','NO_CONV','abandoned flow ended', 'WARN');
+    }
+  }, 600 / wfSpeed);
+}
+
+function markShowRecoveryReport(){
+  const r = MARK_STATE.recovered;
+  const rev = MARK_STATE.revenue;
+  nmModal('NetMarkX — Rapport “Panier abandonné”', `
+    <div class="grid-4">
+      <div class="card"><div class="muted">Paniers traités</div><div class="stat-val mono">${rand(20,60)}</div><span class="pill info">7 jours</span></div>
+      <div class="card"><div class="muted">Ventes récupérées</div><div class="stat-val mono">${r}</div><span class="pill ok">Auto-flow</span></div>
+      <div class="card"><div class="muted">Revenus récupérés</div><div class="stat-val mono">${rev} CHF</div><span class="pill ok">Direct</span></div>
+      <div class="card"><div class="muted">ROAS estimé</div><div class="stat-val mono">${(2+Math.random()*4).toFixed(1)}x</div><span class="pill info">Pilotage</span></div>
+    </div>
+    <div class="hint">Démo: tu relies ça à ton slide “Impact” (ventes perdues récupérées + process automatisé).</div>
+  `);
+  pushLog('NetMarkX','Report','Open abandoned cart report','OK');
+  audit('Admin','NetMarkX','OPEN','recovery_report','INFO');
+}
+
+/* -----------------------------------------------------------
+  7) CARE SIM (intent + Shopify API simulated + auto reply)
+----------------------------------------------------------- */
+let CARE_STATE = { message:null, intent:null, orderId:'100184', status:null };
+
+function careSimulateMessage(){
+  const i = pick(DEMO.care.intents);
+  CARE_STATE.intent = i;
+  CARE_STATE.message = i.text;
+  CARE_STATE.orderId = pick(Object.keys(DEMO.care.orders));
+
+  toast('info','Message client', `"${i.text}" (intent=${i.intent}, score=${i.score})`);
+  pushLog('NetCareX','Intent', `${i.intent} score=${i.score}`,'OK');
+  audit('System','NetCareX','INTENT', `${i.intent} score=${i.score}`, 'INFO');
+  termLog('care', `INTENT: ${i.intent} (score ${i.score}) — order=${CARE_STATE.orderId}`, 'OK');
+}
+
+function careFetchOrderStatus(){
+  // simulated Shopify API call (no backend)
+  const oid = CARE_STATE.orderId || '100184';
+  const data = DEMO.care.orders[oid] || DEMO.care.orders['100184'];
+  CARE_STATE.status = data;
+
+  toast('ok','Shopify API', `Commande ${oid}: ${data.status} — ${data.carrier} — ETA: ${data.eta}`);
+  pushLog('NetCareX','ShopifyAPI', `order=${oid} status=${data.status}`,'OK');
+  audit('System','NetCareX','API_CALL', `shopify order=${oid}`, 'INFO');
+  termLog('care', `SHOPIFY: status=${data.status}, tracking=${data.tracking}`, 'OK');
+}
+
+function careAutoReply(){
+  const i = CARE_STATE.intent?.intent || 'WISMO';
+  const oid = CARE_STATE.orderId || '100184';
+  const s = CARE_STATE.status || DEMO.care.orders[oid];
+
+  let reply = '';
+  if(i==='WISMO'){
+    reply = `Bonjour, votre commande ${oid} est actuellement "${s.status}". Transporteur: ${s.carrier}. ETA: ${s.eta}. Tracking: ${s.tracking}.`;
+  } else if(i==='RETURN'){
+    reply = `Bonjour, je peux lancer un retour pour votre commande ${oid}. Je vous envoie l’étiquette et les instructions dans un instant.`;
+  } else if(i==='REFUND'){
+    reply = `Bonjour, je vérifie le remboursement lié à la commande ${oid}. Si le statut est “initié”, le délai bancaire peut être 3–5 jours.`;
+  } else {
+    reply = `Bonjour, je peux vous aider sur la commande ${oid}. Dites-moi votre préférence (taille/échange).`;
+  }
+
+  nmModal('NetCareX — Réponse immédiate (sans humain)', `
+    <div class="pill info" style="margin-bottom:10px"><i class="fas fa-bolt"></i> Auto-reply générée</div>
+    <div class="card" style="background:#0f1216">
+      <div class="muted">Message envoyé au client :</div>
+      <div style="margin-top:10px;color:#fff;line-height:1.5">${reply}</div>
+    </div>
+    <div class="hr"></div>
+    <div class="hint">Démo: tu montres “intent → Shopify → réponse → log + audit + SLA”.</div>
+  `);
+
+  // update SLA-ish KPIs
+  setText('sFRT', `${rand(2,12)}m`);
+  setText('sSLA', `${rand(92,98)}%`);
+
+  toast('ok','Auto-reply','Réponse envoyée (démo).');
+  pushLog('NetCareX','AutoReply', `intent=${i} order=${oid}`,'OK');
+  audit('System','NetCareX','AUTO_REPLY', `intent=${i} order=${oid}`, 'INFO');
+  termLog('care', `AUTO_REPLY: sent (intent=${i})`, 'OK');
+}
+
+/* -----------------------------------------------------------
+  8) FIX: ton code était coupé — sécurité runtime
+----------------------------------------------------------- */
+if(typeof runOpsChecks === 'function'){
+  // nothing
+} else {
+  // fallback for button if missing
+  window.runOpsChecks = ()=> toast('info','OPS','(démo) checks non définis dans ce build.');
+}
+
+/* -----------------------------------------------------------
+  9) BONUS: raccourcis présentation prof
+----------------------------------------------------------- */
+window.addEventListener('keydown', (e)=>{
+  if(e.key==='F9'){ // quick demo
+    toast('info','Demo','Run: Design → Cat → Mark → Care (démo)');
+    nav('design', document.querySelectorAll('.nav-item')[1]);
+    setTimeout(()=>runWorkflow('design'), 300);
+    setTimeout(()=>{ nav('cat', document.querySelectorAll('.nav-item')[2]); runWorkflow('cat'); }, 2400);
+    setTimeout(()=>{ nav('promo', document.querySelectorAll('.nav-item')[3]); markSimulateAbandon(); markRunAbandonedFlow(); }, 4600);
+    setTimeout(()=>{ nav('care', document.querySelectorAll('.nav-item')[4]); careSimulateMessage(); careFetchOrderStatus(); careAutoReply(); }, 6900);
+  }
+});
+</script>
+
   </script>
 </body>
 </html>
+
 
 
