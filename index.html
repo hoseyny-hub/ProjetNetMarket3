@@ -2580,11 +2580,52 @@ window.addEventListener('keydown', (e)=>{
     setTimeout(()=>{ nav('care', document.querySelectorAll('.nav-item')[4]); careSimulateMessage(); careFetchOrderStatus(); careAutoReply(); }, 6900);
   }
 });
-</script>
+  /* ===========================
+  PATCH: SIMULATIONS RÉALISTES
+  (COLLER ICI, SANS <script>)
+=========================== */
 
-  </script>
+function nmModal(title, html){
+  const host = document.createElement('div');
+  host.style.position='fixed';
+  host.style.inset='0';
+  host.style.background='rgba(0,0,0,.72)';
+  host.style.zIndex='9000';
+  host.style.display='flex';
+  host.style.alignItems='center';
+  host.style.justifyContent='center';
+  host.style.padding='18px';
+  host.innerHTML = `
+    <div style="width:min(980px, 96vw);max-height:92vh;overflow:auto;
+                background:#0f1216;border:1px solid rgba(255,255,255,.12);
+                border-radius:16px;box-shadow:0 20px 70px rgba(0,0,0,.65);">
+      <div style="display:flex;align-items:center;justify-content:space-between;
+                  padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.08);background:#0b0c10">
+        <div style="font-weight:900;color:#fff">${title}</div>
+        <button class="btn secondary" style="padding:7px 10px" id="nmCloseBtn">
+          <i class="fas fa-xmark"></i> Fermer
+        </button>
+      </div>
+      <div style="padding:14px">${html}</div>
+    </div>
+  `;
+  document.body.appendChild(host);
+  host.querySelector('#nmCloseBtn').onclick = ()=> host.remove();
+  host.addEventListener('click', (e)=>{ if(e.target===host) host.remove(); });
+  return host;
+}
+
+// ⚠️ IMPORTANT: inject après que le DOM existe
+window.addEventListener('load', ()=>{
+  if(typeof injectSimPanels === 'function'){
+    injectSimPanels();
+  }
+});
+
+</script>
 </body>
 </html>
+
 
 
 
